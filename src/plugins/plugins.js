@@ -91,6 +91,8 @@ import ViewDatumAction from './viewDatumAction/plugin.js';
 import ViewLargeAction from './viewLargeAction/plugin.js';
 import WebPagePlugin from './webPage/plugin.js';
 
+import NuclearesPlugin from './nucleares/plugin.js';
+
 /**
  * @type {Object}
  */
@@ -184,5 +186,7 @@ plugins.InspectorDataVisualization = InspectorDataVisualization;
 plugins.CorrelationTelemetry = CorrelationTelemetryPlugin;
 plugins.DerivedTelemetry = DerivedTelemetryPlugin;
 plugins.EventTimestripPlugin = EventTimestripPlugin;
+
+plugins.Nucleares = NuclearesPlugin;
 
 export default plugins;

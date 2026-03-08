@@ -116,7 +116,10 @@
       const timeLinePlugin = openmct.plugins.Timeline();
       openmct.install(timeLinePlugin);
       openmct.install(openmct.plugins.Hyperlink());
-      openmct.install(openmct.plugins.UTCTimeSystem());
+
+      //openmct.install(openmct.plugins.UTCTimeSystem());
+      openmct.install(openmct.plugins.Nucleares());
+
       openmct.install(
         openmct.plugins.AutoflowView({
           type: 'telemetry.panel'
@@ -132,10 +135,15 @@
           menuOptions: [
             {
               name: 'Fixed',
-              timeSystem: 'utc',
+              timeSystem: 'nucleares-time',
+              clock: 'nucleares-clock',
+              clockOffsets: {
+                start: -THIRTY_MINUTES,
+                end: 0
+              },
               bounds: {
-                start: Date.now() - THIRTY_MINUTES,
-                end: Date.now()
+                start: -THIRTY_MINUTES,
+                end: 0
               },
               // commonly used bounds can be stored in history
               // bounds (start and end) can accept either a milliseconds number
@@ -145,22 +153,22 @@
                 {
                   label: 'Last Day',
                   bounds: {
-                    start: () => Date.now() - ONE_DAY,
-                    end: () => Date.now()
+                    start: () => -ONE_DAY,
+                    end: () => 0
                   }
                 },
                 {
                   label: 'Last 2 hours',
                   bounds: {
-                    start: () => Date.now() - TWO_HOURS,
-                    end: () => Date.now()
+                    start: () => -TWO_HOURS,
+                    end: () => 0
                   }
                 },
                 {
                   label: 'Last hour',
                   bounds: {
-                    start: () => Date.now() - ONE_HOUR,
-                    end: () => Date.now()
+                    start: () => -ONE_HOUR,
+                    end: () => 0
                   }
                 }
               ],
@@ -172,8 +180,8 @@
             },
             {
               name: 'Realtime',
-              timeSystem: 'utc',
-              clock: 'local',
+              timeSystem: 'nucleares-time',
+              clock: 'nucleares-clock',
               clockOffsets: {
                 start: -THIRTY_MINUTES,
                 end: THIRTY_SECONDS
