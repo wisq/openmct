@@ -188,6 +188,20 @@
               },
               presets: [
                 {
+                  label: '12 Hours',
+                  bounds: {
+                    start: -(12 * ONE_HOUR),
+                    end: THIRTY_SECONDS
+                  }
+                },
+                {
+                  label: '6 Hours',
+                  bounds: {
+                    start: -(6 * ONE_HOUR),
+                    end: THIRTY_SECONDS
+                  }
+                },
+                {
                   label: '1 Hour',
                   bounds: {
                     start: -ONE_HOUR,
@@ -212,13 +226,6 @@
                   label: '5 Minutes',
                   bounds: {
                     start: -FIVE_MINUTES,
-                    end: THIRTY_SECONDS
-                  }
-                },
-                {
-                  label: '1 Minute',
-                  bounds: {
-                    start: -ONE_MINUTE,
                     end: THIRTY_SECONDS
                   }
                 }
