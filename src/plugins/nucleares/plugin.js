@@ -2,20 +2,28 @@
 
 import http from './http.js';
 
-const base_url = 'http://localhost:8081';
+const baseUrl = 'http://localhost:8081';
+let dictionaryPromise;
 
 function getDictionary() {
-    return http.get(base_url + '/dictionary.json')
-        .then(function (result) {
-            return result.data;
-        });
+    if (!dictionaryPromise) {
+	dictionaryPromise = http.get(baseUrl + '/dictionary.json')
+	    .then(result => result.data)
+            .catch(err => {
+                dictionaryPromise = undefined;
+                throw err;
+            });
+    }
+
+    return dictionaryPromise;
 }
 
 var objectProvider = {
     get: function (identifier) {
         return getDictionary().then(function (dictionary) {
-            if (identifier.key === 'spacecraft') {
-                return {
+	    var rval;
+            if (identifier.key === 'facility') {
+                rval = {
                     identifier: identifier,
                     name: dictionary.name,
                     type: 'folder',
@@ -25,23 +33,25 @@ var objectProvider = {
                 var measurement = dictionary.measurements.filter(function (m) {
                     return m.key === identifier.key;
                 })[0];
-                return {
+                rval = {
                     identifier: identifier,
                     name: measurement.name,
-                    type: 'example.telemetry',
+                    type: 'nucleares.telemetry',
                     telemetry: {
                         values: measurement.values
                     },
-                    location: 'example.taxonomy:spacecraft'
+                    location: 'nucleares.taxonomy:facility'
                 };
             }
+	    console.log([identifier, rval]);
+	    return rval;
         });
     }
 };
 
 var compositionProvider = {
     appliesTo: function (domainObject) {
-        return domainObject.identifier.namespace === 'example.taxonomy' &&
+        return domainObject.identifier.namespace === 'nucleares.taxonomy' &&
                domainObject.type === 'folder';
     },
     load: function (domainObject) {
@@ -49,7 +59,7 @@ var compositionProvider = {
             .then(function (dictionary) {
                 return dictionary.measurements.map(function (m) {
                     return {
-                        namespace: 'example.taxonomy',
+                        namespace: 'nucleares.taxonomy',
                         key: m.key
                     };
                 });
@@ -113,7 +123,7 @@ function NuclearesRealtimeTelemetryProvider(socket) {
 
     return {
 	supportsSubscribe: function (domainObject) {
-	    return domainObject.type === 'example.telemetry';
+	    return domainObject.type === 'nucleares.telemetry';
 	},
 
 	subscribe: function (domainObject, callback) {
@@ -129,27 +139,19 @@ function NuclearesRealtimeTelemetryProvider(socket) {
 export default function NuclearesPlugin() {
     return function install(openmct) {
         openmct.objects.addRoot({
-            namespace: 'example.taxonomy',
-            key: 'spacecraft'
+            namespace: 'nucleares.taxonomy',
+            key: 'facility'
         });
 
-        openmct.objects.addProvider('example.taxonomy', objectProvider);
+        openmct.objects.addProvider('nucleares.taxonomy', objectProvider);
 
         openmct.composition.addProvider(compositionProvider);
 
-        openmct.types.addType('example.telemetry', {
+        openmct.types.addType('nucleares.telemetry', {
             name: 'Example Telemetry Point',
             description: 'Example telemetry point from our happy tutorial.',
             cssClass: 'icon-telemetry'
         });
-
-	openmct.time.addTimeSystem({
-	    key: 'nucleares-time',
-	    name: 'Reactor Time',
-	    timeFormat: 'nucleares-time-format',
-	    durationFormat: 'duration',
-	    epoch: 0
-	});
 
 	openmct.telemetry.addFormat({
 	    key: 'nucleares-time-format',
@@ -184,12 +186,20 @@ export default function NuclearesPlugin() {
 	    }
 	});
 
+	openmct.time.addTimeSystem({
+	    key: 'nucleares-time',
+	    name: 'Reactor Time',
+	    timeFormat: 'nucleares-time-format',
+	    durationFormat: 'duration',
+	    epoch: 0
+	});
+
         var provider = {
             supportsRequest: function (domainObject) {
-                return domainObject.type === 'example.telemetry';
+                return domainObject.type === 'nucleares.telemetry';
             },
             request: function (domainObject, options) {
-                var url = base_url + '/history/' +
+                var url = baseUrl + '/history/' +
                     domainObject.identifier.key +
                     '?start=' + options.start +
                     '&end=' + options.end;
@@ -203,7 +213,7 @@ export default function NuclearesPlugin() {
 
         openmct.telemetry.addProvider(provider);
 
-	var socket = new WebSocket(base_url.replace(/^http/, 'ws') + '/realtime/');
+	var socket = new WebSocket(baseUrl.replace(/^http/, 'ws') + '/realtime/');
 	openmct.time.addClock(new NuclearesClock(socket));
 	openmct.telemetry.addProvider(new NuclearesRealtimeTelemetryProvider(socket));
 
