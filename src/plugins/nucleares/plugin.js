@@ -1,17 +1,29 @@
 // ex: sw=4
 
-import http from './http.js';
-
 const baseUrl = 'http://localhost:8081';
 let dictionaryPromise;
 
 function getDictionary() {
     if (!dictionaryPromise) {
-	dictionaryPromise = http.get(baseUrl + '/dictionary.json')
-	    .then(result => result.data)
-            .catch(err => {
-                dictionaryPromise = undefined;
-                throw err;
+	dictionaryPromise = fetch(baseUrl + '/dictionary.json')
+            .then(res => res.json())
+            .then(dictionary => {
+                const index = {};
+
+                function indexTree(node, parentKey = null) {
+		    node.parent = parentKey;
+                    index[node.key] = node;
+                    if (node.children) {
+                        node.children.forEach(child => indexTree(child, node.key));
+                    }
+                }
+
+                indexTree(dictionary);
+
+                return {
+                    root: dictionary,
+                    index: index
+                };
             });
     }
 
@@ -19,51 +31,52 @@ function getDictionary() {
 }
 
 var objectProvider = {
-    get: function (identifier) {
-        return getDictionary().then(function (dictionary) {
-	    var rval;
-            if (identifier.key === 'facility') {
-                rval = {
-                    identifier: identifier,
-                    name: dictionary.name,
-                    type: 'folder',
-                    location: 'ROOT'
-                };
-            } else {
-                var measurement = dictionary.measurements.filter(function (m) {
-                    return m.key === identifier.key;
-                })[0];
-                rval = {
-                    identifier: identifier,
-                    name: measurement.name,
-                    type: 'nucleares.telemetry',
-                    telemetry: {
-                        values: measurement.values
-                    },
-                    location: 'nucleares.taxonomy:facility'
+    get(identifier) {
+
+        return getDictionary().then(({ index }) => {
+
+            const node = index[identifier.key];
+            if (!node) {
+                return Promise.reject();
+            }
+
+            if (node.type === 'folder') {
+                return {
+                    identifier,
+                    name: node.name,
+                    type: 'folder'
                 };
             }
-	    console.log([identifier, rval]);
-	    return rval;
+
+            if (node.type === 'telemetry') {
+                return {
+                    identifier,
+                    name: node.name,
+                    type: 'nucleares.telemetry',
+		    location: 'nucleares.taxonomy:' + node.parent,
+		    telemetry: {values: node.values}
+                };
+            }
         });
     }
 };
 
 var compositionProvider = {
-    appliesTo: function (domainObject) {
-        return domainObject.identifier.namespace === 'nucleares.taxonomy' &&
-               domainObject.type === 'folder';
+    appliesTo(domainObject) {
+	return domainObject.identifier.namespace === 'nucleares.taxonomy' &&
+	    domainObject.type === 'folder';
     },
-    load: function (domainObject) {
-        return getDictionary()
-            .then(function (dictionary) {
-                return dictionary.measurements.map(function (m) {
-                    return {
-                        namespace: 'nucleares.taxonomy',
-                        key: m.key
-                    };
-                });
-            });
+
+    load(domainObject) {
+        return getDictionary().then(({ index }) => {
+            const node = index[domainObject.identifier.key];
+            const children = node.children || [];
+
+            return children.map(child => ({
+                namespace: 'nucleares.taxonomy',
+                key: child.key
+            }));
+        });
     }
 };
 
@@ -138,18 +151,18 @@ function NuclearesRealtimeTelemetryProvider(socket) {
 /** @type {OpenMCTPlugin} */
 export default function NuclearesPlugin() {
     return function install(openmct) {
-        openmct.objects.addRoot({
-            namespace: 'nucleares.taxonomy',
-            key: 'facility'
-        });
+	openmct.objects.addRoot({
+	    namespace: 'nucleares.taxonomy',
+	    key: 'root'
+	});
 
         openmct.objects.addProvider('nucleares.taxonomy', objectProvider);
 
         openmct.composition.addProvider(compositionProvider);
 
         openmct.types.addType('nucleares.telemetry', {
-            name: 'Example Telemetry Point',
-            description: 'Example telemetry point from our happy tutorial.',
+            name: 'Nucleares Telemetry',
+            description: 'Telemetry from the Nucleares simulation.',
             cssClass: 'icon-telemetry'
         });
 
@@ -204,9 +217,9 @@ export default function NuclearesPlugin() {
                     '?start=' + options.start +
                     '&end=' + options.end;
 
-                return http.get(url)
+                return fetch(url)
                     .then(function (resp) {
-                        return resp.data;
+                        return resp.json();
                     });
             }
         };
