@@ -1,6 +1,7 @@
 // ex: sw=4
 
-const baseUrl = 'http://localhost:8081';
+const baseUrl = `${__NUCLEARES_TELEMETRY_URL__}`;
+console.log(baseUrl);
 let dictionaryPromise;
 
 function getDictionary() {

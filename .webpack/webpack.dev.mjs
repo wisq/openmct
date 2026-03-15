@@ -26,7 +26,8 @@ export default merge(common, {
   },
   plugins: [
     new webpack.DefinePlugin({
-      __OPENMCT_ROOT_RELATIVE__: '"dist/"'
+      __OPENMCT_ROOT_RELATIVE__: '"dist/"',
+      __NUCLEARES_TELEMETRY_URL__: '"http://localhost:8081"'
     })
   ],
   devtool: 'eval-source-map',

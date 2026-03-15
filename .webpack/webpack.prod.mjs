@@ -12,7 +12,8 @@ export default merge(common, {
   mode: 'production',
   plugins: [
     new webpack.DefinePlugin({
-      __OPENMCT_ROOT_RELATIVE__: '""'
+      __OPENMCT_ROOT_RELATIVE__: '""',
+      __NUCLEARES_TELEMETRY_URL__: '/mct_nuke/'
     })
   ],
   devtool: 'source-map'
